@@ -2,6 +2,7 @@ package com.example.jetpackposedetection
 
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -26,11 +27,9 @@ class MainActivity : ComponentActivity() {
         setContent {
             get_permissions()
             JetpackPoseDetectionTheme {
-
                 val results = remember {
                     mutableStateOf(emptyList<landmarks>())
                 }
-
                 val analyzer = remember {
                     LandmarkImageAnalyzer(
                         classifier = TfLiteLandmarkClassifier(applicationContext),
@@ -54,15 +53,30 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize()
                 ){
                     CameraPreview(controller , Modifier.fillMaxSize())
-
                     Canvas(modifier = Modifier.fillMaxSize()) {
-                        val width = size.width
-                        val height = size.height
+                        val width : Float  = size.width
+                        val height :Float = size.height
+                        val previewRatio  : Float = 640f/480f
+                        val screenRatio : Float = height/width
+                        Log.d("canvas size" , "$width and $height")
                         results.value.forEach { landmark ->
+                            var dx : Float = landmark.x
+                            var dy : Float = landmark.y
+                            if(screenRatio > previewRatio) {
+                                val scaleX = height/640*480
+                                val difX = (scaleX - width)/scaleX
+                                dx = (dx-difX/2)*scaleX
+                                dy *= height
+                            }else{
+                                val scaleY = width/640*480
+                                val difY = (scaleY - height)/scaleY
+                                dx *= width
+                                dy = (dy-difY/2)*scaleY
+                            }
                             drawCircle(
                                 color = Color.Red,
                                 radius = 10f,
-                                center = Offset( landmark.x * width , landmark.y * height)
+                                center = Offset( dx,dy)
                             )
                         }
                     }
