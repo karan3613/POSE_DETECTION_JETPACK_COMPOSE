@@ -1,6 +1,6 @@
-package com.example.jetpackposedetection
+package com.example.jetpackposedetection.data
 
-data class landmarks(
+data class Landmarks(
     val x : Float ,
     val y : Float ,
     val z : Float ,

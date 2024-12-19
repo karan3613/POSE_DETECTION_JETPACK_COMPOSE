@@ -1,5 +1,6 @@
 package com.example.jetpackposedetection
 
+import android.view.ViewGroup
 import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
 import androidx.compose.runtime.Composable
@@ -17,6 +18,13 @@ fun CameraPreview(
         factory = {
             PreviewView(it).apply {
                 this.controller = controller
+                this.scaleType = PreviewView.ScaleType.FILL_CENTER
+                layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
+                // Preview is incorrectly scaled in Compose on some devices without this
+                implementationMode = PreviewView.ImplementationMode.COMPATIBLE
                 controller.bindToLifecycle(lifecycleOwner)
             }
         },

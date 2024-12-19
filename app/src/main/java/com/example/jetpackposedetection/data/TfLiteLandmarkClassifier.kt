@@ -1,13 +1,18 @@
 package com.example.jetpackposedetection.data
 
-import android.R.attr
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Matrix
 import android.util.Log
-import com.example.jetpackposedetection.LandmarkClassifier
-import com.example.jetpackposedetection.landmarks
+import androidx.annotation.OptIn
+import androidx.camera.core.ExperimentalGetImage
+import androidx.camera.core.ImageProxy
 import com.example.jetpackposedetection.ml.Mediapipe
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.pose.Pose
+import com.google.mlkit.vision.pose.PoseDetection
+import com.google.mlkit.vision.pose.PoseDetector
+import com.google.mlkit.vision.pose.defaults.PoseDetectorOptions
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.support.common.ops.NormalizeOp
 import org.tensorflow.lite.support.image.ImageProcessor
@@ -25,10 +30,16 @@ class TfLiteLandmarkClassifier(
         .add(ResizeOp(256, 256, ResizeOp.ResizeMethod.BILINEAR))
         .add(NormalizeOp(0f, 255f))
         .build()
+    private val poseDetector: PoseDetector
 
+    init {
+        val options = PoseDetectorOptions.Builder()
+            .setDetectorMode(PoseDetectorOptions.STREAM_MODE)
+            .build()
+        poseDetector = PoseDetection.getClient(options)
+    }
 
-
-    override fun classify(bitmap: Bitmap, rotationDegrees: Int): List<landmarks> {
+    override fun classify(bitmap: Bitmap, rotationDegrees: Int): List<Landmarks> {
         val rotatedBitmap = rotateBitmap(bitmap, rotationDegrees , false , false)
         var tensorImage = TensorImage(DataType.FLOAT32)
         tensorImage.load(rotatedBitmap)
@@ -43,7 +54,7 @@ class TfLiteLandmarkClassifier(
         Log.d("bitmap", "$width and $height")
         val landmarksList = outputFeature0.toList()
             .chunked(5) { chunk ->
-                landmarks(
+                Landmarks(
                     (chunk[0]/255f),
                     (chunk[1]/255f),
                     chunk[2],
@@ -52,6 +63,17 @@ class TfLiteLandmarkClassifier(
                 )
             }
         return landmarksList
+    }
+
+    @OptIn(ExperimentalGetImage::class)
+    override fun classifyMlKit(image : ImageProxy , onResults : (Pose?) -> Unit){
+        val inputImage = InputImage.fromMediaImage(image.image!!, image.imageInfo.rotationDegrees)
+        poseDetector.process(inputImage)
+            .addOnSuccessListener{pose->
+                onResults(pose)
+            }.addOnCompleteListener{
+                image.close()
+            }
     }
     private fun rotateBitmap(bitmap: Bitmap, rotationDegrees: Int, flipX : Boolean, flipY : Boolean): Bitmap {
         val matrix = Matrix()
@@ -63,6 +85,6 @@ class TfLiteLandmarkClassifier(
         if (rotatedBitmap != bitmap) {
             bitmap.recycle()
         }
-        return rotatedBitmap ;
+        return rotatedBitmap
     }
 }

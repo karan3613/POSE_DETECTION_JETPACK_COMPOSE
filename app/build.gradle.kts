@@ -69,8 +69,7 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
-    val cameraxVersion = "1.3.0-rc01"
-
+    val cameraxVersion = "1.3.0-rc02"
     implementation("androidx.camera:camera-core:$cameraxVersion")
     implementation("androidx.camera:camera-camera2:$cameraxVersion")
     implementation("androidx.camera:camera-lifecycle:$cameraxVersion")
@@ -79,4 +78,5 @@ dependencies {
     implementation("androidx.camera:camera-extensions:$cameraxVersion")
     implementation ("org.tensorflow:tensorflow-lite-support:0.1.0")
     implementation ("org.tensorflow:tensorflow-lite-metadata:0.1.0")
+    implementation ("com.google.mlkit:pose-detection:18.0.0-beta5")
 }
