@@ -24,7 +24,7 @@ import org.tensorflow.lite.support.tensorbuffer.TensorBuffer
 class TfLiteLandmarkClassifier(
     private val context : Context,
 ) : LandmarkClassifier {
-    private var model : Mediapipe = Mediapipe.newInstance(context)
+    private val model : Mediapipe = Mediapipe.newInstance(context)
     private var imageProcessor: ImageProcessor = ImageProcessor
         .Builder()
         .add(ResizeOp(256, 256, ResizeOp.ResizeMethod.BILINEAR))

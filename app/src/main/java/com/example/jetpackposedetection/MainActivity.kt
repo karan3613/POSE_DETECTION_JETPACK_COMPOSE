@@ -5,13 +5,19 @@ import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.camera.core.CameraSelector
+import androidx.camera.video.FallbackStrategy
 import androidx.camera.video.FileOutputOptions
+import androidx.camera.video.Quality
+import androidx.camera.video.QualitySelector
+import androidx.camera.video.Recorder
 import androidx.camera.video.Recording
+import androidx.camera.video.VideoCapture
 import androidx.camera.video.VideoRecordEvent
 import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.video.AudioConfig
@@ -28,6 +34,7 @@ import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -38,16 +45,25 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.jetpackposedetection.data.LandmarkImageAnalyzer
 import com.example.jetpackposedetection.data.TfLiteLandmarkClassifier
 import com.example.jetpackposedetection.ui.theme.JetpackPoseDetectionTheme
 import com.example.jetpackposedetection.painter.GraphicOverlay
 import com.example.jetpackposedetection.painter.PoseGraphic
 import com.google.mlkit.vision.pose.Pose
+import dagger.hilt.EntryPoint
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import java.io.File
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private var recording : Recording? = null
+    private var count = 0
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -57,6 +73,7 @@ class MainActivity : ComponentActivity() {
             )
         }
         setContent {
+
             JetpackPoseDetectionTheme {
                 val results = remember { mutableStateOf<Pose?>(null) }
                 val graphicOverlay = remember { GraphicOverlay() }
@@ -64,6 +81,7 @@ class MainActivity : ComponentActivity() {
                 val cameraSelector: MutableState<Int> = remember {
                     mutableIntStateOf(CameraSelector.LENS_FACING_BACK)
                 }
+                val viewModel : CameraViewModel = hiltViewModel()
                 val analyzer = remember {
                     LandmarkImageAnalyzer(
                         classifier = TfLiteLandmarkClassifier(applicationContext),
@@ -76,6 +94,17 @@ class MainActivity : ComponentActivity() {
                         graphicOverlay = graphicOverlay
                     )
                 }
+                val preferredQuality = Quality.SD
+                val recorder = Recorder.Builder()
+                    .setQualitySelector(
+                        QualitySelector.from(
+                            preferredQuality,
+                            FallbackStrategy.higherQualityOrLowerThan(preferredQuality)
+                        )
+                    )
+                    .build()
+                val videoCapture = VideoCapture.withOutput(recorder)
+
                 val controller  = remember {
                         LifecycleCameraController(applicationContext).apply {
                         setEnabledUseCases(
@@ -85,6 +114,15 @@ class MainActivity : ComponentActivity() {
                             ActivityCompat.getMainExecutor(applicationContext) ,
                             analyzer
                         )
+                    }
+                }
+                LaunchedEffect(viewModel.result.value){
+                    if(viewModel.result.value != null){
+                        Toast.makeText(
+                            applicationContext ,
+                            viewModel.result.value!!.analysis_result + viewModel.result.value!!.filename  ,
+                            Toast.LENGTH_LONG
+                        ).show()
                     }
                 }
                 Scaffold {padding ->
@@ -114,7 +152,11 @@ class MainActivity : ComponentActivity() {
                         IconButton(
                             modifier = Modifier.size(40.dp),
                             onClick = {
-                                recordVideo(controller)
+                                recordVideo(controller,
+                                    onRecorded = {file->
+                                    viewModel.onUpload(file)
+                                }
+                                )
                             }
                         ){
                             Icon(
@@ -123,20 +165,24 @@ class MainActivity : ComponentActivity() {
                                 modifier = Modifier.size(40.dp)
                             )
                         }
-                    }
+                        }
                     }
                 }
             }
         }
     }
     @SuppressLint("MissingPermission")
-    private fun recordVideo(controller: LifecycleCameraController){
+    private fun recordVideo(controller: LifecycleCameraController , onRecorded :(File) -> Unit){
+        count++
+        val outputFile = File(filesDir , "my_recording.mp4")
+        val uploadFile = File(filesDir , "my_upload_count_${count}.mp4")
         if(recording != null){
             recording?.stop()
             recording = null
+            outputFile.copyTo(uploadFile , true)
+            onRecorded(uploadFile)
             return
         }
-        val outputFile = File(filesDir , "my_recording.mp4")
         recording = controller.startRecording(
             FileOutputOptions.Builder(outputFile).build(),
             AudioConfig.create(true),

@@ -1,11 +1,13 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    id ("kotlin-kapt")
+    id ("dagger.hilt.android.plugin")
 }
 
 android {
     namespace = "com.example.jetpackposedetection"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.example.jetpackposedetection"
@@ -69,14 +71,40 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
-    val cameraxVersion = "1.3.0-rc02"
-    implementation("androidx.camera:camera-core:$cameraxVersion")
-    implementation("androidx.camera:camera-camera2:$cameraxVersion")
-    implementation("androidx.camera:camera-lifecycle:$cameraxVersion")
-    implementation("androidx.camera:camera-video:$cameraxVersion")
-    implementation("androidx.camera:camera-view:$cameraxVersion")
-    implementation("androidx.camera:camera-extensions:$cameraxVersion")
-    implementation ("org.tensorflow:tensorflow-lite-support:0.1.0")
-    implementation ("org.tensorflow:tensorflow-lite-metadata:0.1.0")
-    implementation ("com.google.mlkit:pose-detection:18.0.0-beta5")
+    //CameraX
+    implementation(libs.androidx.camera.core)
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.video)
+    implementation(libs.androidx.camera.view.v130rc02)
+    implementation(libs.androidx.camera.extensions)
+
+    //Tensorflow
+    implementation (libs.tensorflow.lite.support)
+    implementation (libs.tensorflow.lite.metadata)
+
+    //MLKit pose detection
+    implementation (libs.pose.detection)
+
+   //Retrofit
+    implementation (libs.retrofit)
+    implementation (libs.converter.gson)
+    implementation (libs.okhttp)
+    implementation (libs.logging.interceptor)
+
+    // compose viewmodel
+    implementation (libs.androidx.lifecycle.viewmodel.compose)
+
+    // compose hilt navigation
+    implementation (libs.androidx.hilt.navigation.compose)
+
+    // compose material3
+    implementation (libs.material3)
+
+    // lifecycle
+    implementation (libs.androidx.lifecycle.runtime.ktx.v251)
+
+    // hilt
+    implementation (libs.hilt.android)
+    kapt (libs.hilt.compiler)
 }
