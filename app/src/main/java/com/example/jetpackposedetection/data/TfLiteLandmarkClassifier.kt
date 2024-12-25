@@ -31,6 +31,8 @@ class TfLiteLandmarkClassifier(
         .add(NormalizeOp(0f, 255f))
         .build()
     private val poseDetector: PoseDetector
+    private var toggleRecording = false
+    private var completeRecording = false
 
     init {
         val options = PoseDetectorOptions.Builder()
@@ -70,10 +72,20 @@ class TfLiteLandmarkClassifier(
         val inputImage = InputImage.fromMediaImage(image.image!!, image.imageInfo.rotationDegrees)
         poseDetector.process(inputImage)
             .addOnSuccessListener{pose->
+                analyzePose(
+                    pose = pose ,
+                    onDetection = {toggle , complete->
+                        toggleRecording = toggle
+                        completeRecording = complete
+                    }
+                )
                 onResults(pose)
             }.addOnCompleteListener{
                 image.close()
             }
+    }
+    private fun analyzePose(pose : Pose , onDetection : (Boolean , Boolean) ->(Unit)){
+
     }
     private fun rotateBitmap(bitmap: Bitmap, rotationDegrees: Int, flipX : Boolean, flipY : Boolean): Bitmap {
         val matrix = Matrix()
